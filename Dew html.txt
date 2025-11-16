@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dew</title>
+  <link href="https://fonts.googleapis.com/css2?family=Unica+One&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Unica One', cursive;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background: linear-gradient(to bottom, #000010, #0d0d2e);
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      z-index: 1;
+    }
+
+    .title {
+      font-size: 4rem;
+      color: #f0eaff;
+      text-align: center;
+      text-shadow: 0 0 15px #b993e6;
+      margin-bottom: 30px;
+      z-index: 2;
+    }
+
+    .audio-container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(14px);
+      border: 2px solid #cecbff;
+      border-radius: 20px;
+      box-shadow: 0 0 40px rgba(204, 153, 255, 0.4);
+      width: 90vw;
+      max-width: 500px;
+      padding: 32px;
+      z-index: 2;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .play-btn, .repeat-btn {
+      background: linear-gradient(135deg, #ba68c8, #7986cb);
+      border: none;
+      border-radius: 50%;
+      padding: 18px;
+      font-size: 24px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    }
+
+    .play-btn:hover, .repeat-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .volume-bar {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .volume-icon {
+      font-size: 18px;
+      color: #9575cd;
+      margin-right: 8px;
+    }
+
+    .volume-slider {
+      flex-grow: 1;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: linear-gradient(to right, #d1c4e9, #90caf9);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 14px;
+    }
+
+    .progress {
+      width: 0%;
+      height: 100%;
+      background: #7e57c2;
+      transition: width 0.2s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="stars"></canvas>
+
+  <div class="title">Dew</div>
+
+  <div class="audio-container">
+    <div class="controls">
+      <div class="buttons">
+        <button class="play-btn">▶️</button>
+        <button class="repeat-btn">🔁</button>
+      </div>
+      <div class="volume-bar">
+        <span class="volume-icon">🔊</span>
+        <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="1">
+      </div>
+      <div class="progress-bar"><div class="progress" id="progress"></div></div>
+      <audio id="audio" src="https://voca.ro/1ieoNz4lxDmt" loop></audio>
+    </div>
+  </div>
+
+  <script>
+    // Basic animated stars on canvas
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let stars = [];
+    for (let i = 0; i < 100; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.5 + 0.5,
+        dx: (Math.random() - 0.5) * 0.2,
+        dy: (Math.random() - 0.5) * 0.2,
+        alpha: Math.random()
+      });
+    }
+
+    function animateStars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      stars.forEach(star => {
+        star.x += star.dx;
+        star.y += star.dy;
+
+        if (star.x < 0 || star.x > canvas.width) star.dx *= -1;
+        if (star.y < 0 || star.y > canvas.height) star.dy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${star.alpha})`;
+        ctx.fill();
+      });
+
+      requestAnimationFrame(animateStars);
+    }
+
+    animateStars();
+
+    // Audio controls
+    const playBtn = document.querySelector('.play-btn');
+    const repeatBtn = document.querySelector('.repeat-btn');
+    const volumeSlider = document.querySelector('.volume-slider');
+    const audio = document.getElementById('audio');
+    const progress = document.getElementById('progress');
+
+    playBtn.addEventListener('click', () => {
+      if (audio.paused) {
+        audio.play();
+        playBtn.textContent = '⏸️';
+      } else {
+        audio.pause();
+        playBtn.textContent = '▶️';
+      }
+    });
+
+    repeatBtn.addEventListener('click', () => {
+      audio.loop = !audio.loop;
+      repeatBtn.style.background = audio.loop 
+        ? 'linear-gradient(135deg, #7e57c2, #4fc3f7)' 
+        : 'linear-gradient(135deg, #ba68c8, #7986cb)';
+    });
+
+    volumeSlider.addEventListener('input', () => {
+      audio.volume = volumeSlider.value;
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      const percentage = (audio.currentTime / audio.duration) * 100;
+      progress.style.width = percentage + '%';
+    });
+  </script>
+
+</body>
+</html>
